@@ -1,6 +1,6 @@
 {
   "name": "strapi-plugin-publish-media-validation",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Strapi v5 plugin that enforces required media fields at publish time — works around the known limitation where required: true on media fields is not validated on publish.",
   "license": "MIT",
   "keywords": [
@@ -28,14 +28,27 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/__tests__/**/*.test.ts"],
+    "transform": {
+      "^.+\\.tsx?$": ["ts-jest", { "tsconfig": "tsconfig.test.json" }]
+    }
   },
   "peerDependencies": {
-    "@strapi/strapi": ">=5.0.0"
+    "@strapi/strapi": ">=5.0.0",
+    "@strapi/utils": ">=5.0.0"
   },
   "devDependencies": {
     "@strapi/strapi": "5.44.0",
     "@strapi/utils": "5.44.0",
+    "@types/jest": "^30.0.0",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.4.11",
     "typescript": "^5.0.0"
   }
 }
