@@ -1,0 +1,41 @@
+{
+  "name": "strapi-plugin-publish-media-validation",
+  "version": "1.0.0",
+  "description": "Strapi v5 plugin that enforces required media fields at publish time — works around the known limitation where required: true on media fields is not validated on publish.",
+  "license": "MIT",
+  "keywords": [
+    "strapi",
+    "plugin",
+    "media",
+    "validation",
+    "publish",
+    "required"
+  ],
+  "main": "./dist/server/index.js",
+  "exports": {
+    "./strapi-server": "./dist/server/index.js"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "strapi": {
+    "kind": "plugin",
+    "name": "publish-media-validation",
+    "displayName": "Publish Media Validation",
+    "description": "Enforces required media fields when publishing content types in Strapi v5."
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "@strapi/strapi": ">=5.0.0"
+  },
+  "devDependencies": {
+    "@strapi/strapi": "5.44.0",
+    "@strapi/utils": "5.44.0",
+    "typescript": "^5.0.0"
+  }
+}
