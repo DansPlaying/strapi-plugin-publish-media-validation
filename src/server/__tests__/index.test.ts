@@ -165,7 +165,7 @@ describe('middleware — flat media fields', () => {
     );
     const { result } = runMiddleware(baseCtx);
     await expect(result).rejects.toThrow(errors.ValidationError);
-    await expect(result).rejects.toThrow('Cover');
+    await expect(result).rejects.toThrow('Cannot publish: required media field is missing — Cover');
   });
 
   it('lists all missing fields in the error message', async () => {
@@ -177,6 +177,7 @@ describe('middleware — flat media fields', () => {
       { cover: null, heroImage: null }
     );
     const { result } = runMiddleware(baseCtx);
+    await expect(result).rejects.toThrow('Cannot publish: required media fields are missing');
     await expect(result).rejects.toThrow('Cover');
     await expect(result).rejects.toThrow('Hero Image');
   });
@@ -247,7 +248,7 @@ describe('middleware — component fields', () => {
     );
     const { result } = runMiddleware();
     await expect(result).rejects.toThrow(errors.ValidationError);
-    await expect(result).rejects.toThrow('Hero > photo');
+    await expect(result).rejects.toThrow('Hero › Photo');
   });
 
   it('passes through when all repeatable component items have required media', async () => {
@@ -272,7 +273,7 @@ describe('middleware — component fields', () => {
       { cards: [{ photo: { id: 1 } }, { photo: null }] }
     );
     const { result } = runMiddleware();
-    await expect(result).rejects.toThrow('Cards[2] > photo');
+    await expect(result).rejects.toThrow('Cards (item 2) › Photo');
   });
 
   it('builds populate that includes the component media field', async () => {
@@ -332,7 +333,7 @@ describe('middleware — dynamiczone fields', () => {
     );
     const { result } = runMiddleware();
     await expect(result).rejects.toThrow(errors.ValidationError);
-    await expect(result).rejects.toThrow('Blocks[1] > photo');
+    await expect(result).rejects.toThrow('Blocks (item 1) › Photo');
   });
 
   it('reports the correct block index in a multi-block dynamic zone', async () => {
@@ -349,7 +350,7 @@ describe('middleware — dynamiczone fields', () => {
       }
     );
     const { result } = runMiddleware();
-    await expect(result).rejects.toThrow('Blocks[2] > photo');
+    await expect(result).rejects.toThrow('Blocks (item 2) › Photo');
   });
 
   it('skips blocks whose component type has no required media', async () => {
@@ -386,7 +387,7 @@ describe('middleware — dynamiczone fields', () => {
       }
     );
     const { result } = runMiddleware();
-    await expect(result).rejects.toThrow('Blocks[2] > photo');
+    await expect(result).rejects.toThrow('Blocks (item 2) › Photo');
   });
 
   it('builds populate that merges media fields from all component types', async () => {

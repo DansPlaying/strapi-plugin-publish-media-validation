@@ -135,9 +135,28 @@ const register = ({ strapi }: { strapi: Core.Strapi }) => {
 
     if (missing.length > 0) {
       const labels = missing
-        .map((f) => f.charAt(0).toUpperCase() + f.slice(1).replace(/([A-Z])/g, ' $1').replace(/_/g, ' '))
+        .map((rawPath) =>
+          rawPath
+            .split(' > ')
+            .map((seg) => {
+              // "blocks[2]" → "Blocks (item 2)"
+              const indexed = seg.match(/^(.+?)\[(\d+)\]$/);
+              if (indexed) {
+                const name = indexed[1].charAt(0).toUpperCase() +
+                  indexed[1].slice(1).replace(/([A-Z])/g, ' $1').replace(/_/g, ' ');
+                return `${name} (item ${indexed[2]})`;
+              }
+              return seg.charAt(0).toUpperCase() +
+                seg.slice(1).replace(/([A-Z])/g, ' $1').replace(/_/g, ' ');
+            })
+            .join(' › ')
+        )
         .join(', ');
-      throw new ValidationError(`The following required media fields are empty: ${labels}`);
+
+      const verb = missing.length === 1 ? 'field is' : 'fields are';
+      throw new ValidationError(
+        `Cannot publish: required media ${verb} missing — ${labels}`
+      );
     }
 
     return next();
