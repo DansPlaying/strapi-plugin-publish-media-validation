@@ -1,26 +1,22 @@
-import path from 'path';
 import type { Core, UID } from '@strapi/strapi';
 
 type ValidationErrorCtor = new (message: string) => Error;
 
 function resolveValidationError(): ValidationErrorCtor {
-  const sep = path.sep;
-  for (const [filename, mod] of Object.entries(require.cache ?? {})) {
-    if (
-      filename.includes(`@strapi${sep}utils`) &&
-      filename.endsWith('index.js') &&
-      (mod as any)?.exports?.errors?.ValidationError
-    ) {
-      return (mod as any).exports.errors.ValidationError;
-    }
+  try {
+    // @strapi/utils is always present in the host Strapi project; require()
+    // loads the CJS build, which is the same instance Strapi's error
+    // middleware uses for instanceof checks → errors become 400, not 500.
+    return (require('@strapi/utils') as any).errors.ValidationError;
+  } catch {
+    return class extends Error {
+      constructor(message: string) {
+        super(message);
+        this.name = 'ValidationError';
+        (this as any).status = 400;
+      }
+    };
   }
-  return class extends Error {
-    constructor(message: string) {
-      super(message);
-      this.name = 'ValidationError';
-      (this as any).status = 400;
-    }
-  };
 }
 
 /**

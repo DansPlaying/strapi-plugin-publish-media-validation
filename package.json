@@ -1,6 +1,6 @@
 {
   "name": "strapi-plugin-publish-media-validation",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Strapi v5 plugin that enforces required media fields at publish time — works around the known limitation where required: true on media fields is not validated on publish.",
   "license": "MIT",
   "keywords": [
