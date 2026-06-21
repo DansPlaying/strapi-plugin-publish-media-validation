@@ -50,14 +50,12 @@ function buildPopulate(
       // to populate:'*' when there are no explicitly known nested keys.
       populate[key] = { populate: Object.keys(nested).length ? nested : '*' };
     } else if (a.type === 'dynamiczone') {
-      // Merge field names from every possible component type so that
-      // Strapi populates whichever fields exist on each concrete item.
-      const merged: Record<string, any> = {};
-      for (const compUID of (a.components ?? [])) {
-        const nested = buildPopulate(compUID, strapi, seen);
-        Object.assign(merged, nested);
-      }
-      populate[key] = { populate: Object.keys(merged).length ? merged : '*' };
+      // Strapi v5 does NOT accept a flat merged-field-name object for
+      // dynamic zones — only '*' or the per-component 'on' syntax are
+      // valid. A flat object causes findOne to throw, producing the
+      // generic "Internal Server Error" before our ValidationError is
+      // ever reached. Use '*' to load all direct fields of every block.
+      populate[key] = { populate: '*' };
     }
   }
 
@@ -123,15 +121,28 @@ const register = ({ strapi }: { strapi: Core.Strapi }) => {
     const documentId = (ctx.params as { documentId?: string })?.documentId;
     if (!documentId) return next();
 
-    const populate = buildPopulate(ctx.uid as string, strapi);
-    if (Object.keys(populate).length === 0) return next();
+    let missing: string[] = [];
 
-    const doc = await strapi.documents(ctx.uid as UID.ContentType).findOne({
-      documentId,
-      populate,
-    });
+    try {
+      const populate = buildPopulate(ctx.uid as string, strapi);
 
-    const missing = collectMissingMedia(doc, ctx.uid as string, strapi);
+      if (Object.keys(populate).length > 0) {
+        const doc = await strapi.documents(ctx.uid as UID.ContentType).findOne({
+          documentId,
+          populate,
+        });
+
+        missing = collectMissingMedia(doc, ctx.uid as string, strapi);
+      }
+    } catch (err) {
+      // Re-throw only our own validation errors; swallow unexpected plugin
+      // errors so a bug here never blocks a legitimate publish.
+      if (err instanceof ValidationError) throw err;
+      strapi.log.warn(
+        `[publish-media-validation] Skipping validation due to unexpected error: ${err}`
+      );
+      return next();
+    }
 
     if (missing.length > 0) {
       const labels = missing
@@ -139,7 +150,6 @@ const register = ({ strapi }: { strapi: Core.Strapi }) => {
           rawPath
             .split(' > ')
             .map((seg) => {
-              // "blocks[2]" → "Blocks (item 2)"
               const indexed = seg.match(/^(.+?)\[(\d+)\]$/);
               if (indexed) {
                 const name = indexed[1].charAt(0).toUpperCase() +

@@ -37,6 +37,7 @@ function buildStrapi(
     getModel: jest.fn().mockReturnValue(
       modelAttributes !== null ? { attributes: modelAttributes } : null
     ),
+    log: { warn: jest.fn() },
   };
 
   plugin.register({ strapi: strapi as any });
@@ -76,6 +77,7 @@ function buildStrapiFromModels(
       const attrs = modelsByUid[uid];
       return attrs !== undefined ? { attributes: attrs } : null;
     }),
+    log: { warn: jest.fn() },
   };
 
   plugin.register({ strapi: strapi as any });
@@ -390,7 +392,7 @@ describe('middleware — dynamiczone fields', () => {
     await expect(result).rejects.toThrow('Blocks (item 2) › Photo');
   });
 
-  it('builds populate that merges media fields from all component types', async () => {
+  it('builds populate using * for dynamic zone fields', async () => {
     const findOne = jest.fn().mockResolvedValue({
       blocks: [{ __component: COPY_PHOTO_UID, photo: { id: 1 } }],
     });
@@ -407,14 +409,17 @@ describe('middleware — dynamiczone fields', () => {
         if (uid === TEXT_UID)       return { attributes: { content: { type: 'richtext' } } };
         return null;
       }),
+      log: { warn: jest.fn() },
     };
 
     plugin.register({ strapi: strapi as any });
     await capturedMiddleware!(baseCtx, jest.fn().mockResolvedValue(undefined));
 
+    // Dynamic zones must use populate:'*' — Strapi v5 rejects flat merged
+    // field-name objects for dynamic zones, which would cause findOne to throw.
     expect(findOne).toHaveBeenCalledWith({
       documentId: 'abc123',
-      populate: { blocks: { populate: { photo: true } } },
+      populate: { blocks: { populate: '*' } },
     });
   });
 });
