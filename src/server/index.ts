@@ -139,7 +139,7 @@ const register = ({ strapi }: { strapi: Core.Strapi }) => {
 
     if (missing.length > 0) {
       const labels = missing
-        .map((f) => f.charAt(0).toUpperCase() + f.slice(1).replace(/_/g, ' '))
+        .map((f) => f.charAt(0).toUpperCase() + f.slice(1).replace(/([A-Z])/g, ' $1').replace(/_/g, ' '))
         .join(', ');
       throw new ValidationError(`The following required media fields are empty: ${labels}`);
     }
