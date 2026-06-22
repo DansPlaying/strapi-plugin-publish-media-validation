@@ -50,12 +50,20 @@ function buildPopulate(
       // to populate:'*' when there are no explicitly known nested keys.
       populate[key] = { populate: Object.keys(nested).length ? nested : '*' };
     } else if (a.type === 'dynamiczone') {
-      // Strapi v5 does NOT accept a flat merged-field-name object for
-      // dynamic zones — only '*' or the per-component 'on' syntax are
-      // valid. A flat object causes findOne to throw, producing the
-      // generic "Internal Server Error" before our ValidationError is
-      // ever reached. Use '*' to load all direct fields of every block.
-      populate[key] = { populate: '*' };
+      // Use the per-component 'on' syntax so nested components inside
+      // each dynamic zone block are recursively populated. A plain '*'
+      // only goes one level deep, causing false-positive "missing media"
+      // errors when a block contains a component that itself has media.
+      if (a.components && Array.isArray(a.components) && a.components.length > 0) {
+        const on: Record<string, any> = {};
+        for (const compUID of a.components as string[]) {
+          const nested = buildPopulate(compUID, strapi, seen);
+          on[compUID] = Object.keys(nested).length ? { populate: nested } : {};
+        }
+        populate[key] = { populate: { on } };
+      } else {
+        populate[key] = { populate: '*' };
+      }
     }
   }
 

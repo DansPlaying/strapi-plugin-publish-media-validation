@@ -392,7 +392,7 @@ describe('middleware — dynamiczone fields', () => {
     await expect(result).rejects.toThrow('Blocks (item 2) › Photo');
   });
 
-  it('builds populate using * for dynamic zone fields', async () => {
+  it('builds populate using the on syntax for dynamic zone fields', async () => {
     const findOne = jest.fn().mockResolvedValue({
       blocks: [{ __component: COPY_PHOTO_UID, photo: { id: 1 } }],
     });
@@ -415,11 +415,70 @@ describe('middleware — dynamiczone fields', () => {
     plugin.register({ strapi: strapi as any });
     await capturedMiddleware!(baseCtx, jest.fn().mockResolvedValue(undefined));
 
-    // Dynamic zones must use populate:'*' — Strapi v5 rejects flat merged
-    // field-name objects for dynamic zones, which would cause findOne to throw.
     expect(findOne).toHaveBeenCalledWith({
       documentId: 'abc123',
-      populate: { blocks: { populate: '*' } },
+      populate: {
+        blocks: {
+          populate: {
+            on: {
+              [COPY_PHOTO_UID]: { populate: { photo: true } },
+              [TEXT_UID]: {},
+            },
+          },
+        },
+      },
     });
+  });
+
+  it('passes through when a dynamic zone block contains a nested component with media', async () => {
+    const CAROUSEL_UID = 'sections.logo-carousel';
+    const LOGO_UID = 'shared.logo';
+    const { runMiddleware } = buildStrapiFromModels(
+      {
+        [ARTICLE_UID]: { topBlocks: { type: 'dynamiczone', components: [CAROUSEL_UID] } },
+        [CAROUSEL_UID]: { logos: { type: 'component', component: LOGO_UID, repeatable: true } },
+        [LOGO_UID]: { image: { type: 'media', required: true } },
+      },
+      {
+        topBlocks: [
+          {
+            __component: CAROUSEL_UID,
+            logos: [
+              { image: { id: 1, url: '/uploads/logo1.png' } },
+              { image: { id: 2, url: '/uploads/logo2.png' } },
+            ],
+          },
+        ],
+      }
+    );
+    const { result, next } = runMiddleware();
+    await result;
+    expect(next).toHaveBeenCalled();
+  });
+
+  it('throws when a nested component inside a dynamic zone block is missing media', async () => {
+    const CAROUSEL_UID = 'sections.logo-carousel';
+    const LOGO_UID = 'shared.logo';
+    const { runMiddleware } = buildStrapiFromModels(
+      {
+        [ARTICLE_UID]: { topBlocks: { type: 'dynamiczone', components: [CAROUSEL_UID] } },
+        [CAROUSEL_UID]: { logos: { type: 'component', component: LOGO_UID, repeatable: true } },
+        [LOGO_UID]: { image: { type: 'media', required: true } },
+      },
+      {
+        topBlocks: [
+          {
+            __component: CAROUSEL_UID,
+            logos: [
+              { image: { id: 1 } },
+              { image: null },
+            ],
+          },
+        ],
+      }
+    );
+    const { result } = runMiddleware();
+    await expect(result).rejects.toThrow(errors.ValidationError);
+    await expect(result).rejects.toThrow('Top Blocks (item 1) › Logos (item 2) › Image');
   });
 });
