@@ -419,11 +419,9 @@ describe('middleware — dynamiczone fields', () => {
       documentId: 'abc123',
       populate: {
         blocks: {
-          populate: {
-            on: {
-              [COPY_PHOTO_UID]: { populate: { photo: true } },
-              [TEXT_UID]: {},
-            },
+          on: {
+            [COPY_PHOTO_UID]: { populate: { photo: true } },
+            [TEXT_UID]: {},
           },
         },
       },

@@ -60,7 +60,7 @@ function buildPopulate(
           const nested = buildPopulate(compUID, strapi, seen);
           on[compUID] = Object.keys(nested).length ? { populate: nested } : {};
         }
-        populate[key] = { populate: { on } };
+        populate[key] = { on };
       } else {
         populate[key] = { populate: '*' };
       }
