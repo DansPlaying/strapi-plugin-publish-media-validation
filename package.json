@@ -5,7 +5,8 @@
   "license": "MIT",
   "keywords": [
     "strapi",
-    "plugin",
+    "strapi-plugin",
+    "strapi-5",
     "media",
     "validation",
     "publish",
